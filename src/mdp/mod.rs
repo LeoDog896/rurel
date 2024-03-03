@@ -4,6 +4,8 @@
 
 use std::hash::Hash;
 
+use rand::seq::SliceRandom;
+
 /// A `State` is something which has a reward, and has a certain set of actions associated with it.
 /// The type of the actions must be defined as the associated type `A`.
 pub trait State: Eq + Hash + Clone {
@@ -17,10 +19,9 @@ pub trait State: Eq + Hash + Clone {
     /// Selects a random action that can be taken from this `State`. The default implementation
     /// takes a uniformly distributed random action from the defined set of actions. You may want
     /// to improve the performance by only generating the necessary action.
-    fn random_action(&self) -> Self::A {
+    fn random_action(&self) -> Option<Self::A> {
         let actions = self.actions();
-        let a_t = rand::random::<usize>() % actions.len();
-        actions[a_t].clone()
+        actions.choose(&mut rand::thread_rng()).cloned()
     }
 }
 
@@ -34,9 +35,13 @@ pub trait Agent<S: State> {
     /// Takes a random action from the set of possible actions from this `State`. The default
     /// implementation uses [State::random_action()](trait.State.html#method.random_action) to
     /// determine the action to be taken.
-    fn pick_random_action(&mut self) -> S::A {
+    fn pick_random_action(&mut self) -> Option<S::A> {
         let action = self.current_state().random_action();
-        self.take_action(&action);
+        
+        if let Some(action) = &action {
+            self.take_action(&action);
+        }
+
         action
     }
 }
