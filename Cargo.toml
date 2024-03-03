@@ -35,3 +35,10 @@ path = "src/examples/weightedcoin.rs"
 [[example]]
 name = "eucdist_dqn"
 path = "src/examples/eucdist_dqn.rs"
+
+[[example]]
+name = "chess"
+path = "src/examples/chess/main.rs"
+
+[dev-dependencies]
+shakmaty = "0.26.0"

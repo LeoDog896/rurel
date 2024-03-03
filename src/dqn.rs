@@ -1,14 +1,11 @@
 // source: https://raw.githubusercontent.com/coreylowman/dfdx/main/examples/rl-dqn.rs
-use dfdx::{
-    nn,
-    optim::{Momentum, Sgd, SgdConfig},
-    prelude::*,
-};
+use dfdx::nn;
+use dfdx::optim::{Momentum, Sgd, SgdConfig};
+use dfdx::prelude::*;
 
-use crate::{
-    mdp::{Agent, State},
-    strategy::{explore::ExplorationStrategy, terminate::TerminationStrategy},
-};
+use crate::mdp::{Agent, State};
+use crate::strategy::explore::ExplorationStrategy;
+use crate::strategy::terminate::TerminationStrategy;
 
 const BATCH: usize = 64;
 

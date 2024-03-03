@@ -52,6 +52,7 @@ impl Agent<CoinState> for CoinAgent {
     fn current_state(&self) -> &CoinState {
         &self.state
     }
+
     fn take_action(&mut self, action: &CoinAction) {
         //Update the state to:
         self.state = CoinState {
