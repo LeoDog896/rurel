@@ -101,5 +101,5 @@ trainer.expected_value(&state, &action) // : Option<f64>
 
 ## Development
 * Run `cargo fmt --all` to format the code.
-* Run `cargo clippy --all-targets --all-features -- -Dwarnings` to lint the code.
+* Run `cargo clippy --all-targets --features dqn -- -Dwarnings` to lint the code.
 * Run `cargo test` to test the code.

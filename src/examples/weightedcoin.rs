@@ -79,7 +79,7 @@ fn main() {
         trainer.train(
             &mut agent,
             &QLearning::new(0.2, 1.0, 0.0),
-            &mut SinkStates {},
+            &mut SinkStates,
             &RandomExploration::new(),
         );
     }

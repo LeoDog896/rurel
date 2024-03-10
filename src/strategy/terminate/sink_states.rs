@@ -8,7 +8,7 @@ use crate::mdp::State;
 use crate::strategy::terminate::TerminationStrategy;
 
 /// The termination strategy that ends if it's at a terminal state (no actions)
-pub struct SinkStates {}
+pub struct SinkStates;
 
 impl<S: State> TerminationStrategy<S> for SinkStates {
     fn should_stop(&mut self, state: &S) -> bool {

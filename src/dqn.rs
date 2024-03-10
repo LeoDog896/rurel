@@ -67,7 +67,7 @@ where
     ///
     pub fn new(
         gamma: f32,
-        learning_rate: f32,
+        learning_rate: f64,
     ) -> DQNAgentTrainer<S, STATE_SIZE, ACTION_SIZE, INNER_SIZE> {
         let dev = AutoDevice::default();
 

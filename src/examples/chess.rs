@@ -6,11 +6,9 @@ use std::num::NonZeroU32;
 
 #[cfg(feature = "dqn")]
 use rurel::dqn::DQNAgentTrainer;
-use rurel::mdp::{Agent, State};
+use rurel::{mdp::{Agent, State}, strategy::terminate::TerminationStrategy};
 use shakmaty::{Bitboard, Board, ByColor, ByRole, CastlingMode, Chess, Color, EnPassantMode, FromSetup, Move, Position, Setup};
 
-/// A simple 2D grid world where the agent can move around.
-/// The agent has to reach (10, 10).
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 struct ChessState(Chess);
@@ -250,7 +248,7 @@ impl State for ChessState {
     }
 
     fn actions(&self) -> Vec<ChessAction> {
-        self.0.legal_moves().to_vec().into_iter().map(ChessAction).collect()
+        self.0.legal_moves().iter().cloned().map(ChessAction).collect()
     }
 }
 
@@ -266,43 +264,37 @@ impl Agent<ChessState> for ChessAgent {
     }
 }
 
+struct ChessTermination;
+
+impl TerminationStrategy<ChessState> for ChessTermination {
+    fn should_stop(&mut self, state: &ChessState) -> bool {
+        state.0.outcome().is_some() || state.0.halfmoves() >= 100
+    }
+}
+
 #[cfg(feature = "dqn")]
 fn main() {
     use rurel::strategy::explore::RandomExploration;
-    use rurel::strategy::terminate::FixedIterations;
 
     let initial_state = ChessState(Chess::default());
 
+    // Train the agent
+    const TRIALS: i32 = 10000;
     let mut trainer = DQNAgentTrainer::<ChessState, 24, 6, 64>::new(0.9, 1e-3);
-    let mut agent = ChessAgent(initial_state.clone());
-    trainer.train(
-        &mut agent,
-        &mut FixedIterations::new(10_000),
-        &RandomExploration::new(),
-    );
+    for _ in 0..TRIALS {
+        let mut agent = ChessAgent(initial_state.clone());
+        trainer.train(
+            &mut agent,
+            &mut ChessTermination,
+            &RandomExploration::new(),
+        );
+        println!("Reward: {}", agent.current_state().reward());
+    }
 
-    // for j in 0..maxy {
-    //     for i in 0..maxx {
-    //         let best_action = trainer
-    //             .best_action(&ChessState {
-    //                 tx,
-    //                 ty,
-    //                 x: i,
-    //                 y: j,
-    //                 maxx,
-    //                 maxy,
-    //             })
-    //             .unwrap();
-    //         match best_action {
-    //             ChessAction::Move { dx: -1, dy: 0 } => print!("<"),
-    //             ChessAction::Move { dx: 1, dy: 0 } => print!(">"),
-    //             ChessAction::Move { dx: 0, dy: -1 } => print!("^"),
-    //             ChessAction::Move { dx: 0, dy: 1 } => print!("v"),
-    //             _ => print!("-"),
-    //         };
-    //     }
-    //     println!();
-    // }
+    // Play against the agent
+    let mut state = ChessState(Chess::default());
+
+
 }
 
 #[cfg(not(feature = "dqn"))]
