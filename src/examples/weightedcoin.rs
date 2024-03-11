@@ -80,7 +80,7 @@ fn main() {
             &mut agent,
             &QLearning::new(0.2, 1.0, 0.0),
             &mut SinkStates,
-            &RandomExploration::new(),
+            &RandomExploration,
         );
     }
 

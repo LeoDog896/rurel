@@ -90,7 +90,7 @@ let mut agent = MyAgent { state: MyState { x: 0, y: 0 }};
 trainer.train(&mut agent,
               &QLearning::new(0.2, 0.01, 2.),
               &mut FixedIterations::new(100000),
-              &RandomExploration::new());
+              &RandomExploration);
 ```
 
 After this, you can query the learned value (Q) for a certain action in a certain state by:

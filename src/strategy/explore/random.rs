@@ -10,15 +10,9 @@ use crate::strategy::explore::ExplorationStrategy;
 /// [Agent::take_random_action()](../../../mdp/trait.Agent.html#method.take_random_action)
 pub struct RandomExploration;
 
-impl RandomExploration {
-    pub fn new() -> RandomExploration {
-        RandomExploration
-    }
-}
-
 impl Default for RandomExploration {
     fn default() -> Self {
-        Self::new()
+        Self
     }
 }
 

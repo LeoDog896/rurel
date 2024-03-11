@@ -154,7 +154,7 @@ fn main() {
     trainer.train(
         &mut agent,
         &mut FixedIterations::new(10_000),
-        &RandomExploration::new(),
+        &RandomExploration,
     );
     for j in 0..maxy {
         for i in 0..maxx {

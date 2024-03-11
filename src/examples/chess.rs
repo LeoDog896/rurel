@@ -286,7 +286,7 @@ fn main() {
         trainer.train(
             &mut agent,
             &mut ChessTermination,
-            &RandomExploration::new(),
+            &RandomExploration,
         );
         println!("Reward: {}", agent.current_state().reward());
     }

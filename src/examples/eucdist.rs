@@ -81,7 +81,7 @@ fn main() {
         &mut agent,
         &QLearning::new(0.2, 0.01, 2.),
         &mut FixedIterations::new(100000),
-        &RandomExploration::new(),
+        &RandomExploration,
     );
     for j in 0..21 {
         for i in 0..21 {

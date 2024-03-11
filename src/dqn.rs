@@ -16,9 +16,9 @@ type QNetwork<const STATE_SIZE: usize, const ACTION_SIZE: usize, const INNER_SIZ
 );
 
 type QNetworkDevice<const STATE_SIZE: usize, const ACTION_SIZE: usize, const INNER_SIZE: usize> = (
-    (nn::modules::Linear<STATE_SIZE, INNER_SIZE, f32, Cpu>, ReLU),
-    (nn::modules::Linear<INNER_SIZE, INNER_SIZE, f32, Cpu>, ReLU),
-    nn::modules::Linear<INNER_SIZE, ACTION_SIZE, f32, Cpu>,
+    (nn::modules::Linear<STATE_SIZE, INNER_SIZE, f32, AutoDevice>, ReLU),
+    (nn::modules::Linear<INNER_SIZE, INNER_SIZE, f32, AutoDevice>, ReLU),
+    nn::modules::Linear<INNER_SIZE, ACTION_SIZE, f32, AutoDevice>,
 );
 
 /// An `DQNAgentTrainer` can be trained for using a certain [Agent](mdp/trait.Agent.html). After
@@ -42,8 +42,8 @@ pub struct DQNAgentTrainer<
     gamma: f32,
     q_network: QNetworkDevice<STATE_SIZE, ACTION_SIZE, INNER_SIZE>,
     target_q_net: QNetworkDevice<STATE_SIZE, ACTION_SIZE, INNER_SIZE>,
-    sgd: Sgd<QNetworkDevice<STATE_SIZE, ACTION_SIZE, INNER_SIZE>, f32, Cpu>,
-    dev: Cpu,
+    sgd: Sgd<QNetworkDevice<STATE_SIZE, ACTION_SIZE, INNER_SIZE>, f32, AutoDevice>,
+    dev: AutoDevice,
     phantom: std::marker::PhantomData<S>,
 }
 

@@ -66,7 +66,7 @@
 //! trainer.train(&mut agent,
 //!               &QLearning::new(0.2, 0.01, 2.),
 //!               &mut FixedIterations::new(100000),
-//!               &RandomExploration::new());
+//!               &RandomExploration);
 //!
 //! // Test to see if it worked
 //! let test_state = MyState { x: 10, y: 9 };
