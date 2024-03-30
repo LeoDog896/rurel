@@ -2,13 +2,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-use std::num::NonZeroU32;
+use std::{num::NonZeroU32, path::PathBuf};
 
 #[cfg(feature = "dqn")]
 use rurel::dqn::DQNAgentTrainer;
 use rurel::{mdp::{Agent, State}, strategy::terminate::TerminationStrategy};
 use shakmaty::{Bitboard, Board, ByColor, ByRole, CastlingMode, Chess, Color, EnPassantMode, FromSetup, Move, Position, Setup};
-
+use clap::Parser;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 struct ChessState(Chess);
@@ -272,28 +272,86 @@ impl TerminationStrategy<ChessState> for ChessTermination {
     }
 }
 
+#[derive(Parser)]
+struct Cli {
+    /// The path to the file to save the model to.
+    file: PathBuf,
+
+    /// The number of trials to run.
+    #[arg(short, long, default_value = "1000")]
+    trials: i32,
+}
+
 #[cfg(feature = "dqn")]
 fn main() {
+    use indicatif::ProgressIterator;
     use rurel::strategy::explore::RandomExploration;
 
-    let initial_state = ChessState(Chess::default());
+    let cli = Cli::parse();
 
-    // Train the agent
-    const TRIALS: i32 = 10000;
-    let mut trainer = DQNAgentTrainer::<ChessState, 24, 6, 64>::new(0.9, 1e-3);
-    for _ in 0..TRIALS {
-        let mut agent = ChessAgent(initial_state.clone());
-        trainer.train(
-            &mut agent,
-            &mut ChessTermination,
-            &RandomExploration,
-        );
-        println!("Reward: {}", agent.current_state().reward());
-    }
+    // check if file exists; if so, load the model
+    let trainer = if cli.file.exists() {
+        let mut trainer = DQNAgentTrainer::<ChessState, 24, 6, 64>::new(0.9, 1e-3);
+        trainer.load(&cli.file.to_str().unwrap()).unwrap();
+        trainer
+    } else {
+        let initial_state = ChessState(Chess::default());
+
+        let mut trainer = DQNAgentTrainer::<ChessState, 24, 6, 64>::new(0.9, 1e-3);
+        for _ in (0..cli.trials).progress() {
+            let mut agent = ChessAgent(initial_state.clone());
+            trainer.train(
+                &mut agent,
+                &mut ChessTermination,
+                &RandomExploration,
+            );
+        }
+
+        trainer.save(&cli.file.to_str().unwrap()).unwrap();
+
+        trainer
+    };
 
     // Play against the agent
     let mut state = ChessState(Chess::default());
 
+    loop {
+        println!("{}", state.0.board());
+        let legal_moves = state.0.legal_moves();
+        if legal_moves.is_empty() {
+            println!("Game over");
+            break;
+        }
+
+        let action = if state.0.turn() == Color::White {
+            let mut input = String::new();
+            std::io::stdin().read_line(&mut input).unwrap();
+            let action = legal_moves
+                .iter()
+                .find(|m| m.to_string() == input.trim());
+
+            let action = match action {
+                Some(action) => action,
+                None => {
+                    println!("Invalid move; valid moves are:");
+                    for m in legal_moves.iter() {
+                        println!("{}", m);
+                    }
+                    continue;
+                }
+            };
+
+            ChessAction(action.clone())
+        } else {
+            let action = trainer
+                .best_action(&state)
+                .expect("No legal moves available");
+            println!("{}", action.0);
+            action
+        };
+
+        state = ChessState(state.0.clone().play(&action.0).unwrap());
+    }
 
 }
 

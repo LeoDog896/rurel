@@ -18,11 +18,13 @@ travis-ci = { repository = "milanboers/rurel", branch = "master" }
 [features]
 default = []
 dqn = ["dfdx"]
+save = ["dfdx/safetensors", "safetensors"]
 cuda = ["dfdx/cuda"]
 
 [dependencies]
 rand = "0.8"
 dfdx = { version = "0.13.0", optional = true }
+safetensors = { version = "0.3.3", optional = true }
 
 [[example]]
 name = "eucdist"
@@ -42,4 +44,6 @@ name = "chess"
 path = "src/examples/chess.rs"
 
 [dev-dependencies]
+clap = { version = "4.5.4", features = ["derive"] }
+indicatif = "0.17.8"
 shakmaty = "0.26.0"

@@ -2,6 +2,8 @@
 use dfdx::nn;
 use dfdx::optim::{Momentum, Sgd, SgdConfig};
 use dfdx::prelude::*;
+#[cfg(feature = "save")]
+use dfdx::tensor::safetensors::Error as SafeTensorError;
 
 use crate::mdp::{Agent, State};
 use crate::strategy::explore::ExplorationStrategy;
@@ -248,6 +250,16 @@ where
                 break;
             }
         }
+    }
+
+    #[cfg(feature = "save")]
+    pub fn save(&self, path: &str) -> Result<(), SafeTensorError> {
+        Ok(self.q_network.save_safetensors(&path)?)
+    }
+
+    #[cfg(feature = "save")]
+    pub fn load(&mut self, path: &str) -> Result<(), SafeTensorError> {
+        Ok(self.q_network.load_safetensors(&path)?)
     }
 }
 
