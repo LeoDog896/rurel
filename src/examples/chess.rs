@@ -7,11 +7,27 @@ use std::{num::NonZeroU32, path::PathBuf};
 #[cfg(feature = "dqn")]
 use rurel::dqn::DQNAgentTrainer;
 use rurel::{mdp::{Agent, State}, strategy::terminate::TerminationStrategy};
-use shakmaty::{Bitboard, Board, ByColor, ByRole, CastlingMode, Chess, Color, EnPassantMode, FromSetup, Move, Position, Setup};
+use shakmaty::{Bitboard, Board, ByColor, ByRole, CastlingMode, Chess, Color, EnPassantMode, FromSetup, Move, Position, Setup, Role, Piece, Square};
 use clap::Parser;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 struct ChessState(Chess);
+
+fn u32_to_square(n: u32) -> Square {
+    Square::ALL[n as usize]
+}
+
+fn u32_to_role(n: u32) -> Role {
+    match n {
+        0 => Role::Pawn,
+        1 => Role::Knight,
+        2 => Role::Bishop,
+        3 => Role::Rook,
+        4 => Role::Queen,
+        5 => Role::King,
+        _ => panic!("Invalid role {}", n),
+    }
+}
 
 /// Split a u64 into two u32s.
 /// Inverse of [join_to_u64].
@@ -64,7 +80,7 @@ impl From<ChessState> for [f32; 24] {
         // then fullmove number
         array[18] = u32::from(val.0.fullmoves()) as f32;
         // then en passant square
-        array[19] = val.0.ep_square(EnPassantMode::Legal).map(|x| x as u32 as f32).unwrap_or(0.0);
+        array[19] = val.0.ep_square(EnPassantMode::Legal).map(|x| x as u32 as f32 + 1.0).unwrap_or(0.0);
         // then promoted bitboard
         let (promoted_a, promoted_b) = split_u64(val.0.promoted().0);
         array[20] = promoted_a as f32;
@@ -99,7 +115,7 @@ impl From<[f32; 24]> for ChessState {
             turn: if v[16] == 0.0 { Color::White } else { Color::Black },
             halfmoves: v[17] as u32,
             fullmoves: NonZeroU32::new(v[18] as u32).unwrap(),
-            ep_square: if v[19] == 0.0 { None } else { Some((v[19] as u32).try_into().unwrap()) },
+            ep_square: if v[19] == 0.0 { None } else { Some(u32_to_square(v[19] as u32 - 1)) },
             promoted: Bitboard(join_to_u64(v[20] as u32, v[21] as u32)),
             remaining_checks: None, // we don't care about this (not Three-Check)
             pockets: None, // we don't care about this (not Crazyhouse)
@@ -192,35 +208,35 @@ impl From<[f32; 6]> for ChessAction {
                     Some(v[5] as u32 - 1)
                 };
                 ChessAction(Move::Normal {
-                    role: role.try_into().unwrap(),
-                    from: from.try_into().unwrap(),
-                    capture: capture.map(|x| (x - 1).try_into().unwrap()),
+                    role: u32_to_role(role),
+                    from: u32_to_square(from),
+                    capture: capture.map(|x| u32_to_role(x as u32 - 1)),
                     to: to.try_into().unwrap(),
-                    promotion: promotion.map(|x| (x - 1).try_into().unwrap()),
+                    promotion: promotion.map(|x| u32_to_role(x as u32 - 1)),
                 })
             }
             1 => {
                 let from = v[2] as u32;
                 let to = v[4] as u32;
                 ChessAction(Move::EnPassant {
-                    from: from.try_into().unwrap(),
-                    to: to.try_into().unwrap(),
+                    from: u32_to_square(from),
+                    to: u32_to_square(to),
                 })
             }
             2 => {
                 let king = v[2] as u32;
                 let rook = v[4] as u32;
                 ChessAction(Move::Castle {
-                    king: king.try_into().unwrap(),
-                    rook: rook.try_into().unwrap(),
+                    king: u32_to_square(king),
+                    rook: u32_to_square(rook),
                 })
             }
             3 => {
                 let role = v[1] as u32;
                 let to = v[4] as u32;
                 ChessAction(Move::Put {
-                    role: role.try_into().unwrap(),
-                    to: to.try_into().unwrap(),
+                    role: u32_to_role(role),
+                    to: u32_to_square(to),
                 })
             }
             _ => panic!("Invalid action"),
