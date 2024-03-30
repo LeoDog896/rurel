@@ -40,12 +40,16 @@ pub struct DQNAgentTrainer<
     S::A: Into<[f32; ACTION_SIZE]>,
     S::A: From<[f32; ACTION_SIZE]>,
 {
-    // values future rewards
+    /// The [discount factor](https://en.wikipedia.org/wiki/Q-learning#Discount_factor) for future rewards.
     gamma: f32,
+    /// The Q-network that is being trained.
     q_network: QNetworkDevice<STATE_SIZE, ACTION_SIZE, INNER_SIZE>,
+    /// The target Q-network that is used to compute the target Q-values.
     target_q_net: QNetworkDevice<STATE_SIZE, ACTION_SIZE, INNER_SIZE>,
+    /// The optimizer that is used to train the Q-network.
     sgd: Sgd<QNetworkDevice<STATE_SIZE, ACTION_SIZE, INNER_SIZE>, f32, AutoDevice>,
     dev: AutoDevice,
+    /// Preserves the type of the state.
     phantom: std::marker::PhantomData<S>,
 }
 

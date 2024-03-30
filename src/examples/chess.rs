@@ -7,7 +7,7 @@ use std::{num::NonZeroU32, path::PathBuf};
 #[cfg(feature = "dqn")]
 use rurel::dqn::DQNAgentTrainer;
 use rurel::{mdp::{Agent, State}, strategy::terminate::TerminationStrategy};
-use shakmaty::{Bitboard, Board, ByColor, ByRole, CastlingMode, Chess, Color, EnPassantMode, FromSetup, Move, Position, Setup, Role, Piece, Square};
+use shakmaty::{Bitboard, Board, ByColor, ByRole, CastlingMode, Chess, Color, EnPassantMode, FromSetup, Move, Position, Setup, Role, Square};
 use clap::Parser;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -196,13 +196,13 @@ impl From<[f32; 6]> for ChessAction {
             0 => {
                 let role = v[1] as u32;
                 let from = v[2] as u32;
-                let capture = if v[3] == 0.0 {
+                let capture = if v[3] as u32 == 0 {
                     None
                 } else {
                     Some(v[3] as u32 - 1)
                 };
                 let to = v[4] as u32;
-                let promotion = if v[5] == 0.0 {
+                let promotion = if v[5] as u32 == 0 {
                     None
                 } else {
                     Some(v[5] as u32 - 1)
@@ -332,7 +332,7 @@ fn main() {
     let mut state = ChessState(Chess::default());
 
     loop {
-        println!("{}", state.0.board());
+        println!("{:?}", state.0.board());
         let legal_moves = state.0.legal_moves();
         if legal_moves.is_empty() {
             println!("Game over");
@@ -366,6 +366,7 @@ fn main() {
             action
         };
 
+        println!("Bot played: {}", action.0);
         state = ChessState(state.0.clone().play(&action.0).unwrap());
     }
 
