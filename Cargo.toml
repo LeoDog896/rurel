@@ -46,4 +46,4 @@ path = "src/examples/chess.rs"
 [dev-dependencies]
 clap = { version = "4.5.4", features = ["derive"] }
 indicatif = "0.17.8"
-shakmaty = "0.26.0"
+shakmaty = "0.27.0"
