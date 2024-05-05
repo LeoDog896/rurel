@@ -2,12 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-use std::{num::NonZeroU32, path::PathBuf};
+use std::path::PathBuf;
 
 #[cfg(feature = "dqn")]
 use rurel::dqn::DQNAgentTrainer;
 use rurel::{mdp::{Agent, State}, strategy::terminate::TerminationStrategy};
-use shakmaty::{Bitboard, Board, ByColor, ByRole, CastlingMode, Chess, Color, EnPassantMode, FromSetup, Move, Position, Setup, Role, Square};
+use shakmaty::{Chess, Color, EnPassantMode, Move, Position, Role, Square};
 use clap::Parser;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -30,15 +30,8 @@ fn u32_to_role(n: u32) -> Role {
 }
 
 /// Split a u64 into two u32s.
-/// Inverse of [join_to_u64].
 fn split_u64(n: u64) -> (u32, u32) {
     ((n & 0xFFFF_FFFF) as u32, (n >> 32) as u32)
-}
-
-/// Join two u32s into a u64.
-/// Inverse of [split_u64].
-fn join_to_u64(a: u32, b: u32) -> u64 {
-    (a as u64) | ((b as u64) << 32)
 }
 
 macro_rules! generate_from_chess_state {
@@ -57,9 +50,9 @@ macro_rules! generate_from_chess_state {
     };
 }
 
-impl From<ChessState> for [f32; 24] {
+impl From<ChessState> for [f32; 21] {
     fn from(val: ChessState) -> Self {
-        let mut array = [0.0; 24];
+        let mut array = [0.0; 21];
         let board = val.0.board();
         // fill the first 16 elements with the bitboards
         generate_from_chess_state!(
@@ -77,50 +70,14 @@ impl From<ChessState> for [f32; 24] {
         array[16] = if val.0.turn() == Color::White { 0.0 } else { 1.0 };
         // then halfmove clock
         array[17] = val.0.halfmoves() as f32;
-        // then fullmove number
-        array[18] = u32::from(val.0.fullmoves()) as f32;
         // then en passant square
-        array[19] = val.0.ep_square(EnPassantMode::Legal).map(|x| x as u32 as f32 + 1.0).unwrap_or(0.0);
-        // then promoted bitboard
-        let (promoted_a, promoted_b) = split_u64(val.0.promoted().0);
-        array[20] = promoted_a as f32;
-        array[21] = promoted_b as f32;
+        array[18] = val.0.ep_square(EnPassantMode::Legal).map(|x| x as u32 as f32 + 1.0).unwrap_or(0.0);
         // then castling rights
         let (castling_a, castling_b) = split_u64(val.0.into_setup(EnPassantMode::Legal).castling_rights.0);
-        array[22] = castling_a as f32;
-        array[23] = castling_b as f32;
+        array[19] = castling_a as f32;
+        array[20] = castling_b as f32;
 
         array
-    }
-}
-
-// From float array has to be implemented for the DQN state
-impl From<[f32; 24]> for ChessState {
-    fn from(v: [f32; 24]) -> Self {
-        ChessState(Chess::from_setup(Setup {
-            board: Board::from_bitboards(
-                ByRole {
-                    pawn: Bitboard(join_to_u64(v[0] as u32, v[1] as u32)),
-                    knight: Bitboard(join_to_u64(v[2] as u32, v[3] as u32)),
-                    bishop: Bitboard(join_to_u64(v[4] as u32, v[5] as u32)),
-                    rook: Bitboard(join_to_u64(v[6] as u32, v[7] as u32)),
-                    queen: Bitboard(join_to_u64(v[8] as u32, v[9] as u32)),
-                    king: Bitboard(join_to_u64(v[10] as u32, v[11] as u32)),
-                },
-                ByColor {
-                    white: Bitboard(join_to_u64(v[12] as u32, v[13] as u32)),
-                    black: Bitboard(join_to_u64(v[14] as u32, v[15] as u32)),
-                },
-            ),
-            turn: if v[16] == 0.0 { Color::White } else { Color::Black },
-            halfmoves: v[17] as u32,
-            fullmoves: NonZeroU32::new(v[18] as u32).unwrap(),
-            ep_square: if v[19] == 0.0 { None } else { Some(u32_to_square(v[19] as u32 - 1)) },
-            promoted: Bitboard(join_to_u64(v[20] as u32, v[21] as u32)),
-            remaining_checks: None, // we don't care about this (not Three-Check)
-            pockets: None, // we don't care about this (not Crazyhouse)
-            castling_rights: Bitboard(join_to_u64(v[22] as u32, v[23] as u32)),
-        }, CastlingMode::Standard).unwrap())
     }
 }
 
@@ -192,6 +149,7 @@ impl From<ChessAction> for [f32; 6] {
 // because output of the DQN is a float array like [0.1, 0.2, 0.1, 0.1]
 impl From<[f32; 6]> for ChessAction {
     fn from(v: [f32; 6]) -> Self {
+        println!("{:?}", v);
         match v[0] as u32 {
             0 => {
                 let role = v[1] as u32;
@@ -252,14 +210,14 @@ impl State for ChessState {
             Some(outcome) => match outcome {
                 shakmaty::Outcome::Decisive { winner, .. } => {
                     if winner == self.0.turn() {
-                        1.0
+                        -20.0
                     } else {
-                        -1.0
+                        40.0
                     }
                 }
-                shakmaty::Outcome::Draw { .. } => 0.0,
+                shakmaty::Outcome::Draw { .. } => -10.0,
             },
-            None => 0.0,
+            None => -10.0,
         }
     }
 
@@ -294,7 +252,7 @@ struct Cli {
     file: PathBuf,
 
     /// The number of trials to run.
-    #[arg(short, long, default_value = "1000")]
+    #[arg(short, long, default_value = "10000")]
     trials: i32,
 }
 
@@ -307,13 +265,13 @@ fn main() {
 
     // check if file exists; if so, load the model
     let trainer = if cli.file.exists() {
-        let mut trainer = DQNAgentTrainer::<ChessState, 24, 6, 64>::new(0.9, 1e-3);
+        let mut trainer = DQNAgentTrainer::<ChessState, 21, 6, 64>::new(0.9, 1e-3);
         trainer.load(&cli.file.to_str().unwrap()).unwrap();
         trainer
     } else {
         let initial_state = ChessState(Chess::default());
 
-        let mut trainer = DQNAgentTrainer::<ChessState, 24, 6, 64>::new(0.9, 1e-3);
+        let mut trainer = DQNAgentTrainer::<ChessState, 21, 6, 64>::new(0.9, 1e-3);
         for _ in (0..cli.trials).progress() {
             let mut agent = ChessAgent(initial_state.clone());
             trainer.train(
@@ -362,11 +320,15 @@ fn main() {
             let action = trainer
                 .best_action(&state)
                 .expect("No legal moves available");
-            println!("{}", action.0);
+            
             action
         };
 
-        println!("Bot played: {}", action.0);
+        println!(
+            "{} played: {}",
+            state.0.turn(),
+            action.0
+        );
         state = ChessState(state.0.clone().play(&action.0).unwrap());
     }
 

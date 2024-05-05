@@ -1,6 +1,6 @@
 // source: https://raw.githubusercontent.com/coreylowman/dfdx/main/examples/rl-dqn.rs
 use dfdx::nn;
-use dfdx::optim::{Momentum, Sgd, SgdConfig};
+use dfdx::optim::Sgd;
 use dfdx::prelude::*;
 #[cfg(feature = "save")]
 use dfdx::tensor::safetensors::Error as SafeTensorError;

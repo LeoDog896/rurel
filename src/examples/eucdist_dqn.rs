@@ -33,20 +33,6 @@ impl From<MyState> for [f32; 6] {
     }
 }
 
-// From float array has to be implemented for the DQN state
-impl From<[f32; 6]> for MyState {
-    fn from(v: [f32; 6]) -> Self {
-        MyState {
-            tx: v[0] as i32,
-            ty: v[1] as i32,
-            x: v[2] as i32,
-            y: v[3] as i32,
-            maxx: v[4] as i32,
-            maxy: v[5] as i32,
-        }
-    }
-}
-
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 enum MyAction {
     Move { dx: i32, dy: i32 },
@@ -91,10 +77,10 @@ impl From<[f32; 4]> for MyAction {
 impl State for MyState {
     type A = MyAction;
 
-    // The reward is the exponential of the negative distance to the target
+    // The reward is the exponential of the negative distance squared to the target
     fn reward(&self) -> f64 {
         let (tx, ty) = (self.tx, self.ty);
-        let d = (((tx - self.x).pow(2) + (ty - self.y).pow(2)) as f64).sqrt();
+        let d = ((tx - self.x).pow(2) + (ty - self.y).pow(2)) as f64;
         -d
     }
 
