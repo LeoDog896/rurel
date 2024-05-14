@@ -50,9 +50,9 @@ macro_rules! generate_from_chess_state {
     };
 }
 
-impl From<ChessState> for [f32; 21] {
+impl From<ChessState> for [f32; 20] {
     fn from(val: ChessState) -> Self {
-        let mut array = [0.0; 21];
+        let mut array = [0.0; 20];
         let board = val.0.board();
         // fill the first 16 elements with the bitboards
         generate_from_chess_state!(
@@ -70,12 +70,10 @@ impl From<ChessState> for [f32; 21] {
         array[16] = if val.0.turn() == Color::White { 0.0 } else { 1.0 };
         // then halfmove clock
         array[17] = val.0.halfmoves() as f32;
-        // then en passant square
-        array[18] = val.0.ep_square(EnPassantMode::Legal).map(|x| x as u32 as f32 + 1.0).unwrap_or(0.0);
         // then castling rights
         let (castling_a, castling_b) = split_u64(val.0.into_setup(EnPassantMode::Legal).castling_rights.0);
-        array[19] = castling_a as f32;
-        array[20] = castling_b as f32;
+        array[18] = castling_a as f32;
+        array[19] = castling_b as f32;
 
         array
     }
@@ -210,14 +208,14 @@ impl State for ChessState {
             Some(outcome) => match outcome {
                 shakmaty::Outcome::Decisive { winner, .. } => {
                     if winner == self.0.turn() {
-                        -20.0
-                    } else {
                         40.0
+                    } else {
+                        -20.0
                     }
                 }
-                shakmaty::Outcome::Draw { .. } => -10.0,
+                shakmaty::Outcome::Draw { .. } => 10.0,
             },
-            None => -10.0,
+            None => 0.0,
         }
     }
 
@@ -265,13 +263,13 @@ fn main() {
 
     // check if file exists; if so, load the model
     let trainer = if cli.file.exists() {
-        let mut trainer = DQNAgentTrainer::<ChessState, 21, 6, 64>::new(0.9, 1e-3);
+        let mut trainer = DQNAgentTrainer::<ChessState, 20, 6, 64>::new(0.995, 1e-3);
         trainer.load(&cli.file.to_str().unwrap()).unwrap();
         trainer
     } else {
         let initial_state = ChessState(Chess::default());
 
-        let mut trainer = DQNAgentTrainer::<ChessState, 21, 6, 64>::new(0.9, 1e-3);
+        let mut trainer = DQNAgentTrainer::<ChessState, 20, 6, 64>::new(0.995, 1e-3);
         for _ in (0..cli.trials).progress() {
             let mut agent = ChessAgent(initial_state.clone());
             trainer.train(

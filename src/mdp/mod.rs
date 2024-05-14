@@ -14,9 +14,7 @@ pub trait State: Eq + Hash + Clone {
 
     /// The reward for when an `Agent` arrives at this `State`.
     /// 
-    /// A positive reward rewards the `Agent` for arriving at this `State`, while a negative reward
-    /// punishes the `Agent` for arriving at this `State`. A reward of 0 means that the `Agent` is
-    /// indifferent to arriving at this `State`.
+    /// Rewards are relative to each other, and are traditionally smaller integers.
     fn reward(&self) -> f64;
     /// The set of actions that can be taken from this `State`, to arrive in another `State`.
     fn actions(&self) -> Vec<Self::A>;
